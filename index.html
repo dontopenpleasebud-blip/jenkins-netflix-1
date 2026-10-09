@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="description" content="A responsive Netflix-style streaming UI demo built with HTML, CSS, and JavaScript." />
+  <title>NETFLIX — Movies & Series</title>
+  <style>
+    :root {
+      --red: #e50914;
+      --red-hover: #f6121d;
+      --bg: #080808;
+      --surface: #181818;
+      --muted: #b3b3b3;
+      --text: #f5f5f1;
+      --nav-height: 72px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scrollbar-color: #444 #101010; }
+    body { margin: 0; color: var(--text); background: var(--bg); font-family: Arial, Helvetica, sans-serif; overflow-x: hidden; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+    a { color: inherit; text-decoration: none; }
+
+    .topbar {
+      position: fixed; z-index: 100; inset: 0 0 auto; height: var(--nav-height);
+      display: flex; align-items: center; gap: 34px; padding: 0 4.2%;
+      background: linear-gradient(180deg, rgba(0,0,0,.88), rgba(0,0,0,.52));
+      transition: background .25s, height .25s;
+    }
+    .topbar.scrolled { background: #090909; height: 62px; }
+    .brand { color: var(--red); font-size: 29px; font-weight: 900; letter-spacing: -1.8px; white-space: nowrap; text-shadow: 0 1px 0 #800; }
+    .brand span { letter-spacing: -1.2px; }
+    .nav-links { display: flex; align-items: center; gap: 19px; font-size: 13px; color: #e5e5e5; }
+    .nav-links a { transition: color .2s; white-space: nowrap; }
+    .nav-links a:hover, .nav-links a.active { color: #fff; font-weight: 700; }
+    .nav-right { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+    .search-wrap { display: flex; align-items: center; border: 1px solid transparent; transition: .25s; }
+    .search-wrap.open { border-color: #fff; background: rgba(0,0,0,.8); padding: 5px 8px; }
+    .icon-btn { border: 0; background: transparent; color: #fff; display: grid; place-items: center; padding: 4px; }
+    .search-input { width: 0; opacity: 0; border: 0; color: #fff; background: transparent; outline: 0; transition: width .25s, opacity .25s; }
+    .search-wrap.open .search-input { width: 185px; opacity: 1; padding-left: 8px; }
+    .kids { font-size: 12px; color: #eee; white-space: nowrap; }
+    .bell { position: relative; font-size: 19px; }
+    .bell::after { content: ''; position: absolute; width: 5px; height: 5px; border-radius: 50%; background: var(--red); top: 1px; right: 0; border: 1px solid #111; }
+    .avatar { width: 31px; height: 31px; background: linear-gradient(135deg,#f5b64c,#d44e61 65%,#7834a8); display: grid; place-items: center; border-radius: 4px; font-weight: 800; font-size: 14px; }
+
+    .hero { position: relative; min-height: min(760px, 93vh); display: flex; align-items: center; padding: 118px 4.2% 125px; background: #141414; isolation: isolate; }
+    .hero::before { content: ''; position: absolute; inset: 0; z-index: -2; background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=2200&q=90'); background-size: cover; background-position: center 42%; filter: saturate(.82); }
+    .hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.57) 43%, rgba(0,0,0,.06) 78%), linear-gradient(0deg, var(--bg) 0%, transparent 40%, rgba(0,0,0,.18) 100%); }
+    .hero-content { max-width: 570px; margin-top: 30px; }
+    .eyebrow { display: flex; align-items: center; gap: 9px; color: #e5e5e5; font-weight: 800; font-size: 12px; letter-spacing: 4px; margin-bottom: 13px; }
+    .n-mark { color: var(--red); font-size: 28px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .hero-title { font-size: clamp(44px, 6vw, 78px); line-height: .94; letter-spacing: -2.5px; margin: 0 0 22px; max-width: 630px; text-transform: uppercase; text-shadow: 0 2px 12px rgba(0,0,0,.25); }
+    .hero-meta { display: flex; align-items: center; gap: 11px; color: #eee; font-size: 14px; margin-bottom: 14px; }
+    .match { color: #46d369; font-weight: 800; }
+    .quality { border: 1px solid #a7a7a7; border-radius: 2px; font-size: 10px; padding: 2px 5px; font-weight: 700; }
+    .hero-description { font-size: 16px; line-height: 1.55; max-width: 510px; color: #f4f4f4; text-shadow: 0 1px 4px #000; margin: 0 0 25px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .action-btn { display: inline-flex; gap: 10px; align-items: center; justify-content: center; border: 0; border-radius: 4px; padding: 12px 23px; font-size: 16px; font-weight: 700; transition: transform .18s, background .18s; }
+    .action-btn:hover { transform: translateY(-2px); }
+    .play-btn { background: #fff; color: #111; }
+    .play-btn:hover { background: #dedede; }
+    .info-btn { color: white; background: rgba(109,109,110,.72); }
+    .info-btn:hover { background: rgba(109,109,110,.48); }
+    .hero-rating { position: absolute; right: 0; bottom: 30%; display: flex; align-items: center; gap: 12px; border-left: 3px solid #dcdcdc; background: rgba(51,51,51,.55); padding: 10px 35px 10px 13px; font-size: 14px; }
+    .round-volume { position: absolute; right: 4.2%; bottom: 30%; width: 38px; height: 38px; transform: translateY(54px); border: 1px solid #aaa; color: #fff; border-radius: 50%; background: rgba(0,0,0,.3); }
+    .hero-age { border: 1px solid #ccc; padding: 3px 7px; min-width: 38px; background: rgba(51,51,51,.45); font-weight: 700; }
+
+    main { position: relative; z-index: 2; margin-top: -100px; }
+    .rows-wrap { padding-bottom: 44px; }
+    .movie-row { margin: 0 0 31px; padding-left: 4.2%; }
+    .row-heading { display: flex; align-items: baseline; gap: 9px; margin: 0 0 13px; font-size: 20px; letter-spacing: -.2px; }
+    .row-heading .see-all { color: #54b9c5; font-size: 12px; font-weight: 700; opacity: 0; transform: translateX(-5px); transition: .2s; }
+    .movie-row:hover .see-all { opacity: 1; transform: translateX(0); }
+    .cards { display: grid; grid-auto-columns: minmax(180px, 16.6%); grid-auto-flow: column; gap: 8px; overflow-x: auto; overflow-y: visible; padding: 8px 4.2% 22px 0; scrollbar-width: none; }
+    .cards::-webkit-scrollbar { display: none; }
+    .movie-card { min-width: 0; border-radius: 5px; overflow: hidden; position: relative; background: #202020; aspect-ratio: 16 / 9; transform-origin: center center; transition: transform .22s ease, box-shadow .22s ease; cursor: pointer; }
+    .movie-card:hover { transform: scale(1.07); z-index: 10; box-shadow: 0 10px 28px rgba(0,0,0,.65); }
+    .movie-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter .2s; }
+    .movie-card:hover img { filter: brightness(.55); }
+    .card-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.84), transparent 70%); opacity: .95; pointer-events: none; }
+    .card-title { position: absolute; left: 11px; right: 8px; bottom: 10px; font-size: 13px; font-weight: 800; text-shadow: 0 1px 4px #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-rating { position: absolute; left: 10px; top: 9px; font-size: 10px; font-weight: 800; background: var(--red); padding: 3px 5px; border-radius: 2px; }
+    .card-hover { position: absolute; inset: auto 8px 8px; display: flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(4px); transition: .2s; }
+    .movie-card:hover .card-hover { opacity: 1; transform: translateY(0); }
+    .mini-btn { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.8); background: rgba(20,20,20,.85); color: #fff; font-size: 13px; }
+    .mini-btn.primary { color: #111; background: white; border-color: white; }
+    .mini-btn:hover { border-color: #fff; background: #555; }
+    .mini-btn.primary:hover { background: #ddd; }
+    .card-info { margin-left: auto; font-size: 11px; border: 1px solid #aaa; padding: 5px 7px; border-radius: 3px; background: rgba(20,20,20,.8); }
+    .empty-state { padding: 38px 4.2%; color: var(--muted); display: none; }
+
+    .footer { color: #808080; max-width: 1000px; padding: 25px 4.2% 35px; margin: 0 auto; font-size: 12px; }
+    .socials { display: flex; gap: 18px; font-size: 21px; color: #ddd; margin-bottom: 18px; }
+    .footer-links { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 13px 20px; margin: 0 0 22px; }
+    .footer-links a:hover { text-decoration: underline; }
+    .service-code { background: transparent; border: 1px solid #808080; color: #808080; padding: 7px 9px; font-size: 12px; margin-bottom: 14px; }
+    .copyright { margin-top: 10px; line-height: 1.55; }
+
+    .modal { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.78); display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(6px); }
+    .modal.show { display: flex; animation: fadein .2s ease; }
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+    .modal-panel { width: min(850px, 100%); max-height: 92vh; overflow: auto; background: #181818; border-radius: 9px; box-shadow: 0 20px 80px rgba(0,0,0,.7); position: relative; }
+    .modal-close { position: absolute; right: 15px; top: 14px; z-index: 4; width: 35px; height: 35px; border-radius: 50%; background: #181818; border: 0; color: #fff; font-size: 21px; }
+    .modal-art { min-height: 260px; background-size: cover; background-position: center; position: relative; display: flex; align-items: end; padding: 28px; }
+    .modal-art::before { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg,#181818 0%,rgba(24,24,24,.1) 85%); }
+    .modal-art-content { z-index: 1; position: relative; }
+    .modal-title { font-size: clamp(30px,5vw,52px); text-transform: uppercase; margin: 0 0 14px; letter-spacing: -1.2px; }
+    .modal-body { padding: 2px 28px 28px; display: grid; grid-template-columns: 1.6fr 1fr; gap: 25px; }
+    .modal-description { color: #eee; font-size: 14px; line-height: 1.6; }
+    .modal-details { color: #aaa; font-size: 13px; line-height: 1.9; }
+    .modal-details strong { color: #ddd; font-weight: 400; }
+    .toast { position: fixed; z-index: 500; left: 50%; bottom: 28px; transform: translate(-50%, 20px); background: #f5f5f1; color: #111; padding: 12px 18px; font-size: 13px; border-radius: 5px; box-shadow: 0 8px 25px #0007; opacity: 0; pointer-events: none; transition: .25s; max-width: calc(100% - 30px); text-align: center; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .mobile-menu { display: none; }
+    .section-note { color: #aaa; font-size: 12px; margin: -6px 0 12px; display: none; }
+
+    @media (max-width: 1000px) {
+      .topbar { gap: 22px; padding-inline: 3%; }
+      .nav-links { gap: 13px; }
+      .kids { display: none; }
+      .hero { padding-left: 3%; min-height: 690px; }
+      .movie-row { padding-left: 3%; }
+      .cards { grid-auto-columns: minmax(180px, 22%); }
+      .hero-rating { bottom: 24%; }
+      .round-volume { bottom: 24%; }
+    }
+    @media (max-width: 700px) {
+      :root { --nav-height: 62px; }
+      .topbar { padding-inline: 17px; gap: 18px; }
+      .brand { font-size: 25px; }
+      .nav-links { position: absolute; top: 60px; left: 15px; display: none; flex-direction: column; align-items: stretch; gap: 0; min-width: 180px; padding: 7px; background: rgba(12,12,12,.97); border: 1px solid #333; border-radius: 4px; box-shadow: 0 8px 20px #0007; }
+      .nav-links.open { display: flex; }
+      .nav-links a { padding: 11px 12px; }
+      .mobile-menu { display: inline-grid; place-items: center; color: #fff; background: transparent; border: 0; font-size: 11px; gap: 2px; }
+      .nav-right { gap: 11px; }
+      .kids, .bell { display: none; }
+      .search-wrap.open { position: absolute; right: 60px; top: 14px; }
+      .search-wrap.open .search-input { width: min(42vw,165px); }
+      .hero { min-height: 610px; align-items: end; padding: 0 18px 125px; }
+      .hero::before { background-position: 56% center; }
+      .hero::after { background: linear-gradient(0deg,var(--bg) 0%,rgba(0,0,0,.75) 32%,rgba(0,0,0,.18) 100%), linear-gradient(90deg,rgba(0,0,0,.3),transparent); }
+      .hero-content { margin: 0; }
+      .hero-title { font-size: clamp(38px,12vw,58px); letter-spacing: -1.7px; margin-bottom: 15px; }
+      .eyebrow { font-size: 10px; letter-spacing: 3px; }
+      .hero-description { font-size: 14px; line-height: 1.45; margin-bottom: 18px; max-width: 95%; }
+      .hero-meta { font-size: 12px; gap: 8px; }
+      .action-btn { padding: 10px 16px; font-size: 14px; }
+      .hero-rating, .round-volume { display: none; }
+      main { margin-top: -72px; }
+      .movie-row { padding-left: 18px; margin-bottom: 20px; }
+      .row-heading { font-size: 17px; margin-bottom: 6px; }
+      .cards { grid-auto-columns: minmax(145px, 42%); gap: 7px; padding-right: 18px; }
+      .movie-card:hover { transform: none; }
+      .movie-card:hover img { filter: none; }
+      .card-hover { display: none; }
+      .card-title { font-size: 12px; }
+      .footer { padding-inline: 20px; }
+      .footer-links { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .modal-body { grid-template-columns: 1fr; gap: 5px; padding: 0 22px 24px; }
+      .modal-art { min-height: 220px; padding: 22px; }
+      .modal-title { font-size: 31px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <a class="brand" href="#home" aria-label="Netflix home">NETFLIX</a>
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation" aria-expanded="false">☰<span>Browse</span></button>
+    <nav class="nav-links" id="navLinks" aria-label="Main navigation">
+      <a href="#home" class="active" data-filter="all">Home</a>
+      <a href="#shows" data-filter="Series">TV Shows</a>
+      <a href="#movies" data-filter="Movies">Movies</a>
+      <a href="#trending" data-filter="trending">New & Popular</a>
+      <a href="#my-list" data-filter="my-list">My List</a>
+    </nav>
+    <div class="nav-right">
+      <div class="search-wrap" id="searchWrap">
+        <button class="icon-btn" id="searchToggle" aria-label="Search titles" title="Search">⌕</button>
+        <input class="search-input" id="searchInput" type="search" placeholder="Titles, people, genres" aria-label="Search titles" />
+      </div>
+      <a class="kids" href="#shows">Kids</a>
+      <button class="icon-btn bell" id="notificationsBtn" aria-label="Notifications" title="Notifications">♧</button>
+      <button class="icon-btn" id="profileBtn" aria-label="Profile menu" title="Profile"><span class="avatar">M</span></button>
+    </div>
+  </header>
+
+  <section class="hero" id="home" aria-label="Featured title">
+    <div class="hero-content">
+      <div class="eyebrow"><span class="n-mark">N</span> SERIES</div>
+      <h1 class="hero-title">Beyond<br />The Horizon</h1>
+      <div class="hero-meta"><span class="match">98% Match</span><span>2026</span><span>2 Seasons</span><span class="quality">4K</span></div>
+      <p class="hero-description">When a mysterious signal arrives from a forgotten corner of the world, one crew risks everything to uncover what lies beyond the horizon.</p>
+      <div class="hero-actions">
+        <button class="action-btn play-btn" id="heroPlay"><span aria-hidden="true">▶</span> Play</button>
+        <button class="action-btn info-btn" id="heroInfo"><span aria-hidden="true">ⓘ</span> More Info</button>
+      </div>
+    </div>
+    <div class="hero-rating"><span class="hero-age">16+</span><span>Suitable for ages 16 and up</span></div>
+    <button class="round-volume" id="soundBtn" aria-label="Toggle sound">♬</button>
+  </section>
+
+  <main>
+    <div class="rows-wrap" id="rowsWrap">
+      <section class="movie-row" id="trending" data-row="trending">
+        <h2 class="row-heading">Trending Now <span class="see-all">Explore all ›</span></h2>
+        <div class="cards" id="trendingCards"></div>
+      </section>
+      <section class="movie-row" id="shows" data-row="Series">
+        <h2 class="row-heading">Binge-worthy Series <span class="see-all">Explore all ›</span></h2>
+        <div class="cards" id="seriesCards"></div>
+      </section>
+      <section class="movie-row" id="movies" data-row="Movies">
+        <h2 class="row-heading">Movies for Your Weekend <span class="see-all">Explore all ›</span></h2>
+        <div class="cards" id="moviesCards"></div>
+      </section>
+      <section class="movie-row" id="continue" data-row="continue">
+        <h2 class="row-heading">Continue Watching <span class="see-all">Pick up where you left off ›</span></h2>
+        <div class="cards" id="continueCards"></div>
+      </section>
+      <section class="movie-row" id="my-list" data-row="my-list">
+        <h2 class="row-heading">My List <span class="see-all">Your saved titles ›</span></h2>
+        <p class="section-note" id="myListNote">Save titles with the + button and they will appear here.</p>
+        <div class="cards" id="myListCards"></div>
+      </section>
+      <div class="empty-state" id="emptyState">No titles found. Try another search.</div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="socials" aria-label="Social links"><span>f</span><span>𝕏</span><span>◎</span><span>▶</span></div>
+    <div class="footer-links">
+      <a href="#help" data-footer="Help Centre">Help Centre</a><a href="#account" data-footer="Account">Account</a><a href="#media" data-footer="Media Centre">Media Centre</a><a href="#investors" data-footer="Investor Relations">Investor Relations</a>
+      <a href="#jobs" data-footer="Jobs">Jobs</a><a href="#terms" data-footer="Terms of Use">Terms of Use</a><a href="#privacy" data-footer="Privacy">Privacy</a><a href="#legal" data-footer="Legal Notices">Legal Notices</a>
+    </div>
+    <button class="service-code" id="serviceCode">Service Code</button>
+    <div class="copyright">© 1997–2026 Netflix-style UI demo<br />This is a front-end demo, not an official Netflix service. It does not provide Netflix accounts or licensed streaming content.</div>
+  </footer>
+
+  <div class="modal" id="titleModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-panel">
+      <button class="modal-close" id="modalClose" aria-label="Close dialog">×</button>
+      <div class="modal-art" id="modalArt">
+        <div class="modal-art-content">
+          <div class="eyebrow"><span class="n-mark">N</span> PREVIEW</div>
+          <h2 class="modal-title" id="modalTitle">Beyond the Horizon</h2>
+          <div class="hero-actions"><button class="action-btn play-btn" id="modalPlay"><span>▶</span> Play preview</button><button class="action-btn info-btn" id="modalSave">＋ My List</button></div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div><div class="hero-meta" id="modalMeta"><span class="match">98% Match</span><span>2026</span><span class="quality">4K</span></div><p class="modal-description" id="modalDescription"></p></div>
+        <div class="modal-details"><div><strong>Genres:</strong> <span id="modalGenres"></span></div><div><strong>Cast:</strong> Fictional ensemble</div><div><strong>Audio:</strong> English, Hindi</div><div><strong>Subtitles:</strong> English, Hindi</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    'use strict';
+    const titles = [
+      { id: 1, title: 'The Last Summit', category: 'Movies', genre: 'Adventure · Drama', year: 2026, match: 98, rating: 'TOP 10', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=85', description: 'A climber haunted by one impossible choice returns to the mountain that changed his life.' , list: 'trending,continue' },
+      { id: 2, title: 'Midnight Protocol', category: 'Series', genre: 'Thriller · Mystery', year: 2025, match: 96, rating: 'NEW', image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=85', description: 'A late-night systems analyst finds a pattern hidden inside a string of citywide outages.', list: 'trending,series' },
+      { id: 3, title: 'Ocean of Stars', category: 'Movies', genre: 'Sci-Fi · Adventure', year: 2026, match: 94, rating: '4K', image: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=900&q=85', description: 'A deep-space crew follows a signal that could change humanity’s place in the universe.', list: 'trending,movies' },
+      { id: 4, title: 'Hidden Kingdom', category: 'Series', genre: 'Fantasy · Adventure', year: 2025, match: 97, rating: 'NEW EPISODE', image: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=900&q=85', description: 'A mapmaker discovers a forest that appears only to people who have lost their way.', list: 'series,continue' },
+      { id: 5, title: 'The Quiet Storm', category: 'Movies', genre: 'Drama · Mystery', year: 2024, match: 91, rating: '', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=85', description: 'A small coastal town tries to rebuild after a storm reveals a decades-old secret.', list: 'trending,movies' },
+      { id: 6, title: 'City of Echoes', category: 'Series', genre: 'Crime · Drama', year: 2026, match: 95, rating: 'TOP 10', image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=900&q=85', description: 'A rookie detective and a retired journalist uncover stories buried beneath a restless city.', list: 'trending,series' },
+      { id: 7, title: 'Wild Frontier', category: 'Movies', genre: 'Action · Adventure', year: 2025, match: 90, rating: '', image: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=900&q=85', description: 'Two estranged siblings race across a vast wilderness to protect their family land.', list: 'movies,continue' },
+      { id: 8, title: 'Paper Moons', category: 'Series', genre: 'Romance · Drama', year: 2024, match: 93, rating: 'NEW', image: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=900&q=85', description: 'Two artists meet in a bookshop and leave each other anonymous letters over one long summer.', list: 'series' },
+      { id: 9, title: 'Redline', category: 'Movies', genre: 'Action · Thriller', year: 2026, match: 97, rating: 'TOP 10', image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=85', description: 'A getaway driver gets one final job and discovers the passenger knows more than they should.', list: 'trending,movies' },
+      { id: 10, title: 'Above the Clouds', category: 'Series', genre: 'Documentary · Nature', year: 2025, match: 99, rating: '4K', image: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=900&q=85', description: 'A breathtaking journey through remote landscapes and the people who call them home.', list: 'series,continue' },
+      { id: 11, title: 'Last Light', category: 'Movies', genre: 'Sci-Fi · Drama', year: 2024, match: 92, rating: '', image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=85', description: 'At the edge of a frozen world, a radio operator receives a message dated tomorrow.', list: 'movies' },
+      { id: 12, title: 'Parallel', category: 'Series', genre: 'Sci-Fi · Mystery', year: 2026, match: 96, rating: 'NEW', image: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=900&q=85', description: 'A physicist wakes in a city where every decision she remembers led to a different life.', list: 'trending,series' },
+      { id: 13, title: 'Golden Hour', category: 'Movies', genre: 'Romance · Comedy', year: 2025, match: 89, rating: '', image: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=85', description: 'A florist and a night-shift chef accidentally swap their phones and start sharing a life.', list: 'movies' },
+      { id: 14, title: 'Blackwater Files', category: 'Series', genre: 'Crime · Thriller', year: 2025, match: 95, rating: 'TOP 10', image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=85', description: 'A journalist revisits an unsolved case, only to find the evidence points back to her own newsroom.', list: 'series,continue' },
+      { id: 15, title: 'Into the Blue', category: 'Movies', genre: 'Adventure · Family', year: 2026, match: 93, rating: 'NEW', image: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=900&q=85', description: 'A young marine biologist sets out to save a reef and finds an unexpected community along the coast.', list: 'trending,movies' }
+    ];
+
+    const imageFallback = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=900&q=80';
+    const storageKey = 'netflix-demo-my-list-v1';
+    let myList = loadSavedList();
+    let activeTitle = titles[0];
+    let currentFilter = 'all';
+    let searchTerm = '';
+    let toastTimeout;
+
+    function loadSavedList() {
+      try {
+        const value = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        return Array.isArray(value) ? value.filter(Number.isFinite) : [];
+      } catch (error) { return []; }
+    }
+    function saveList() {
+      try { localStorage.setItem(storageKey, JSON.stringify(myList)); }
+      catch (error) { showToast('Your browser could not save My List.'); }
+    }
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+    }
+    function cardMarkup(item) {
+      const saved = myList.includes(item.id);
+      return `<article class="movie-card" tabindex="0" role="button" aria-label="More info about ${escapeHTML(item.title)}" data-title-id="${item.id}">
+        <img src="${item.image}" alt="${escapeHTML(item.title)} scenic thumbnail" loading="lazy" onerror="this.onerror=null;this.src='${imageFallback}'" />
+        <div class="card-shade"></div>
+        ${item.rating ? `<span class="card-rating">${escapeHTML(item.rating)}</span>` : ''}
+        <div class="card-title">${escapeHTML(item.title)}</div>
+        <div class="card-hover">
+          <button class="mini-btn primary" data-action="play" aria-label="Play ${escapeHTML(item.title)}">▶</button>
+          <button class="mini-btn" data-action="save" aria-label="${saved ? 'Remove from' : 'Add to'} My List">${saved ? '✓' : '+'}</button>
+          <button class="card-info" data-action="info" aria-label="More info">ⓘ</button>
+        </div>
+      </article>`;
+    }
+    function titleMatchesFilter(item) {
+      if (currentFilter === 'Series' && item.category !== 'Series') return false;
+      if (currentFilter === 'Movies' && item.category !== 'Movies') return false;
+      if (currentFilter === 'trending' && !item.list.split(',').includes('trending')) return false;
+      if (currentFilter === 'my-list' && !myList.includes(item.id)) return false;
+      return true;
+    }
+    function titleMatchesSearch(item) {
+      if (!searchTerm) return true;
+      const haystack = `${item.title} ${item.genre} ${item.category} ${item.year}`.toLowerCase();
+      return haystack.includes(searchTerm.toLowerCase());
+    }
+    function renderRows() {
+      const rows = [
+        { id: 'trendingCards', row: 'trending', select: item => item.list.includes('trending') },
+        { id: 'seriesCards', row: 'Series', select: item => item.category === 'Series' },
+        { id: 'moviesCards', row: 'Movies', select: item => item.category === 'Movies' },
+        { id: 'continueCards', row: 'continue', select: item => item.list.includes('continue') },
+        { id: 'myListCards', row: 'my-list', select: item => myList.includes(item.id) }
+      ];
+      let visibleCount = 0;
+      rows.forEach(row => {
+        const element = document.getElementById(row.id);
+        const section = element.closest('.movie-row');
+        let filtered = titles.filter(item => row.select(item) && titleMatchesSearch(item));
+        if (currentFilter !== 'all' && currentFilter !== row.row) {
+          if (currentFilter === 'Series' || currentFilter === 'Movies' || currentFilter === 'trending' || currentFilter === 'my-list') {
+            filtered = filtered.filter(titleMatchesFilter);
+            if (!filtered.length && !searchTerm) { section.style.display = 'none'; return; }
+          }
+        }
+        if (currentFilter === 'my-list') {
+          filtered = row.row === 'my-list' ? filtered.filter(titleMatchesFilter) : [];
+        } else if (currentFilter === 'Series' || currentFilter === 'Movies') {
+          filtered = filtered.filter(titleMatchesFilter);
+          if (row.row !== currentFilter) { section.style.display = 'none'; return; }
+        } else if (currentFilter === 'trending') {
+          filtered = filtered.filter(titleMatchesFilter);
+          if (row.row !== 'trending') { section.style.display = 'none'; return; }
+        }
+        if (row.row === 'my-list') {
+          document.getElementById('myListNote').style.display = (myList.length === 0 && !searchTerm && currentFilter === 'all') ? 'block' : 'none';
+        }
+        element.innerHTML = filtered.map(cardMarkup).join('');
+        section.style.display = (filtered.length || (row.row === 'my-list' && !searchTerm && currentFilter === 'all')) ? 'block' : 'none';
+        visibleCount += filtered.length;
+      });
+      document.getElementById('emptyState').style.display = visibleCount === 0 ? 'block' : 'none';
+      document.getElementById('rowsWrap').style.paddingBottom = visibleCount === 0 ? '80px' : '';
+    }
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.remove('show'), 2400);
+    }
+    function toggleSaved(item) {
+      if (myList.includes(item.id)) {
+        myList = myList.filter(id => id !== item.id);
+        showToast(`${item.title} removed from My List`);
+      } else {
+        myList.push(item.id);
+        showToast(`${item.title} added to My List`);
+      }
+      saveList(); renderRows();
+      if (activeTitle && activeTitle.id === item.id) updateModalSaveButton();
+    }
+    function openTitle(item, play = false) {
+      activeTitle = item;
+      const modal = document.getElementById('titleModal');
+      document.getElementById('modalTitle').textContent = item.title;
+      document.getElementById('modalArt').style.backgroundImage = `url("${item.image}")`;
+      document.getElementById('modalDescription').textContent = item.description;
+      document.getElementById('modalGenres').textContent = item.genre;
+      document.getElementById('modalMeta').innerHTML = `<span class="match">${item.match}% Match</span><span>${item.year}</span><span>${item.category}</span><span class="quality">HD</span>`;
+      updateModalSaveButton();
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      if (play) showToast(`Preview selected: ${item.title}. Add your licensed video URL to enable playback.`);
+      document.getElementById('modalClose').focus();
+    }
+    function updateModalSaveButton() {
+      const button = document.getElementById('modalSave');
+      const saved = activeTitle && myList.includes(activeTitle.id);
+      button.innerHTML = saved ? '✓ In My List' : '＋ My List';
+    }
+    function closeModal() {
+      document.getElementById('titleModal').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    function applyNavigationFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.nav-links a').forEach(link => link.classList.toggle('active', link.dataset.filter === filter));
+      renderRows();
+      const target = filter === 'my-list' ? 'my-list' : filter === 'Series' ? 'shows' : filter === 'Movies' ? 'movies' : filter === 'trending' ? 'trending' : 'home';
+      document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: target === 'home' ? 'start' : 'center' });
+      document.getElementById('navLinks').classList.remove('open');
+      document.getElementById('mobileMenu').setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', event => {
+      const card = event.target.closest('.movie-card');
+      if (!card) return;
+      const item = titles.find(title => title.id === Number(card.dataset.titleId));
+      if (!item) return;
+      const action = event.target.closest('[data-action]')?.dataset.action;
+      if (action === 'save') { event.stopPropagation(); toggleSaved(item); return; }
+      openTitle(item, action === 'play');
+    });
+    document.addEventListener('keydown', event => {
+      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.movie-card')) {
+        event.preventDefault();
+        const item = titles.find(title => title.id === Number(event.target.dataset.titleId));
+        if (item) openTitle(item);
+      }
+      if (event.key === 'Escape') closeModal();
+    });
+    document.querySelectorAll('.nav-links a').forEach(link => link.addEventListener('click', event => {
+      event.preventDefault(); applyNavigationFilter(link.dataset.filter || 'all');
+    }));
+    document.getElementById('searchToggle').addEventListener('click', () => {
+      const wrap = document.getElementById('searchWrap');
+      wrap.classList.toggle('open');
+      if (wrap.classList.contains('open')) document.getElementById('searchInput').focus();
+      else { document.getElementById('searchInput').value = ''; searchTerm = ''; renderRows(); }
+    });
+    document.getElementById('searchInput').addEventListener('input', event => { searchTerm = event.target.value.trim(); renderRows(); });
+    document.getElementById('mobileMenu').addEventListener('click', () => {
+      const menu = document.getElementById('navLinks');
+      const isOpen = menu.classList.toggle('open');
+      document.getElementById('mobileMenu').setAttribute('aria-expanded', String(isOpen));
+    });
+    document.getElementById('heroPlay').addEventListener('click', () => openTitle({ id: 100, title: 'Beyond the Horizon', category: 'Series', genre: 'Adventure · Mystery · Drama', year: 2026, match: 98, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=90', description: 'When a mysterious signal arrives from a forgotten corner of the world, one crew risks everything to uncover what lies beyond the horizon.' }, true));
+    document.getElementById('heroInfo').addEventListener('click', () => openTitle({ id: 100, title: 'Beyond the Horizon', category: 'Series', genre: 'Adventure · Mystery · Drama', year: 2026, match: 98, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=90', description: 'When a mysterious signal arrives from a forgotten corner of the world, one crew risks everything to uncover what lies beyond the horizon.' }));
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('titleModal').addEventListener('click', event => { if (event.target.id === 'titleModal') closeModal(); });
+    document.getElementById('modalPlay').addEventListener('click', () => showToast('Demo only: connect your own licensed trailer or video URL to enable playback.'));
+    document.getElementById('modalSave').addEventListener('click', () => {
+      if (activeTitle.id === 100) { showToast('Featured title is a demo item and cannot be saved.'); return; }
+      toggleSaved(activeTitle);
+    });
+    document.getElementById('notificationsBtn').addEventListener('click', () => showToast('You are all caught up!'));
+    document.getElementById('profileBtn').addEventListener('click', () => showToast('Profile: Mohan · Demo account'));
+    document.getElementById('serviceCode').addEventListener('click', () => showToast('Demo service code: NFX-2026'));
+    document.querySelectorAll('[data-footer]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); showToast(`${link.dataset.footer} is a demo link.`); }));
+    document.getElementById('soundBtn').addEventListener('click', event => { event.currentTarget.textContent = event.currentTarget.textContent === '♬' ? '×' : '♬'; showToast('No audio is playing in this UI demo.'); });
+    window.addEventListener('scroll', () => document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 30), { passive: true });
+
+    renderRows();
+  </script>
+</body>
+</html>
